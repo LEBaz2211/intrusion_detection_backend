@@ -1,5 +1,6 @@
 import paho.mqtt.subscribe as subscribe
 from flask import Flask
+import json
 
 app = Flask(__name__)
 
@@ -14,8 +15,8 @@ message = subscribe.simple(topics=['#'], hostname=MQTT_HOST, port=MQTT_PORT,
 
 
 print(f"Topic: {message.topic}")
-print(f"Payload: {message.payload}")
-
+payload = json.loads(message.payload.decode('utf-8'))
+print(f"Payload: {payload.get('uplink_message').get('decoded_payload')}")
 
 if __name__ == '__main__':
     app.run(debug=True)
