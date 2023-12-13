@@ -1,3 +1,4 @@
+import json
 import threading
 import paho.mqtt.client as mqtt
 
@@ -25,5 +26,5 @@ class MQTTService:
         self.client.subscribe(topic)
 
     def subscribe_to_device(self, device_id):
-        topic = f"v3/{device_id}/#"
+        topic = f"v3/intrusion-monitoring-2023@ttn/devices/{device_id}/up/#"
         self.subscribe(topic)
