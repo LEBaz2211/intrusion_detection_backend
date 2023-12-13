@@ -1,4 +1,5 @@
 import sqlite3
+import json
 from datetime import datetime
 
 class DatabaseService:
@@ -31,7 +32,7 @@ class DatabaseService:
     def log_event(self, device_id, event_type, date,  description):
         conn = sqlite3.connect(self.db_path)
         conn.execute("INSERT INTO event_log (device_id, timestamp, event_type, event_description) VALUES (?, ?, ?, ?)",
-                     (device_id, date, event_type, description))
+                     (device_id, date, event_type, json.dumps(description)))
         conn.commit()
         conn.close()
 
@@ -42,39 +43,76 @@ class DatabaseService:
                          (device_id, model, location, installation_date))
             conn.commit()
         except sqlite3.IntegrityError:
-            return False  # Device already exists
+            return json.dumps({"status": False})  # Device already exists
         finally:
             conn.close()
-        return True
+        return json.dumps({"status": True})
+
+    def _dict_factory(self, cursor, row):
+        """Converts database row objects to a dictionary."""
+        d = {}
+        for idx, col in enumerate(cursor.description):
+            d[col[0]] = row[idx]
+        return d
 
     def get_device(self, device_id):
         conn = sqlite3.connect(self.db_path)
+        conn.row_factory = self._dict_factory
         cursor = conn.execute("SELECT * FROM devices WHERE device_id = ?", (device_id,))
         device = cursor.fetchone()
         conn.close()
-        return device
-    
+        return json.dumps(device) if device else json.dumps({})
+
     def get_devices(self):
         conn = sqlite3.connect(self.db_path)
+        conn.row_factory = self._dict_factory
         cursor = conn.execute("SELECT * FROM devices")
         devices = cursor.fetchall()
         conn.close()
-        return devices
+        return json.dumps(devices)
 
     def get_event_logs(self, device_id):
         conn = sqlite3.connect(self.db_path)
+        conn.row_factory = self._dict_factory
         cursor = conn.execute("SELECT * FROM event_log WHERE device_id = ?", (device_id,))
         log = cursor.fetchall()
         conn.close()
-        return log
-    
+        return json.dumps(log)
+
+    def get_event_log_by_timestamp(self, timestamp):
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = self._dict_factory
+        cursor = conn.execute("SELECT * FROM event_log WHERE timestamp = ?", (timestamp,))
+        log = cursor.fetchall()
+        conn.close()
+        return json.dumps(log)
+
     def get_event_log_by_timestamp(self, timestamp):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.execute("SELECT * FROM event_log WHERE timestamp = ?", (timestamp,))
         log = cursor.fetchall()
         conn.close()
-        return log
-    
+        return json.dumps(log)
+
+    def update_device(self, device_id, model, location, installation_date):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.execute("UPDATE devices SET model = ?, location = ?, installation_date = ? WHERE device_id = ?",
+                              (model, location, installation_date, device_id))
+        if cursor.rowcount == 0:
+            return json.dumps({"status": False})  # Device not found
+        conn.commit()
+        conn.close()
+        return json.dumps({"status": True})
+
+    def delete_device(self, device_id):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.execute("DELETE FROM devices WHERE device_id = ?", (device_id,))
+        if cursor.rowcount == 0:
+            return json.dumps({"status": False})  # Device not found
+        conn.commit()
+        conn.close()
+        return json.dumps({"status": True})
+
 if __name__ == "__main__":
     # Test the database service
     db_service = DatabaseService("app/database.db")
