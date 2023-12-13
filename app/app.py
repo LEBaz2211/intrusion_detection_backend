@@ -15,24 +15,27 @@ def event_data_to_dict(event_data):
     event_data = str(event_data)
     event_data = event_data.replace("\'", "").replace("{", "").replace("}", "").replace("\"", "")
     event_data = event_data.split(",")
-    event_data = [item.split(":") for item in event_data]
+    event_data = [item.replace(" ", "").split(":") for item in event_data]
     event_data = {item[0]: item[1] for item in event_data if item[0] != "text"}
     return event_data
 
 # Callback function to process MQTT messages
 def on_message(client, userdata, message):
     # print current thread id
-    print(f"Received message '{message.payload.decode()}' on topic '{message.topic}'")
+    # print(f"Received message '{message.payload.decode()}' on topic '{message.topic}'")
     payload = json.loads(message.payload.decode('utf-8'))
-    # print(payload)
-    device_id = payload.get('end_device_ids', {}).get('device_id', 'unknown')
-    event_data = payload.get('uplink_message', {}).get('decoded_payload', {})
-    event_date = payload.get('uplink_message', {}).get('settings', {}).get('time', 'unknown')
+    try:
+        event_data = payload.get('uplink_message', {}).get('decoded_payload', {})
+        device_id = payload.get('end_device_ids', {}).get('device_id', 'unknown')
+        event_date = payload.get('uplink_message', {}).get('settings', {}).get('time', 'unknown')
+    except:
+        print("There was an error parsing the payload")
     event_data = event_data_to_dict(event_data)
-    # print(f"Received message from device {device_id} at {event_date} with data {event_data}")
+    print(event_data)
     # Find if device exists in database and add it if it doesn't exist
     device = db_service.get_device(device_id)
-    if 'intrusion' in event_data.keys():
+    print(event_data['status'])
+    if event_data.get('status') == 'intrusion':
         socketio.emit('intrusion', json.dumps(event_data), broadcast=True)
         db_service.log_event(device_id, "intrusion", event_date, json.dumps(event_data))
     if not device:
