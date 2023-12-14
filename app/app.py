@@ -32,16 +32,17 @@ def on_message(client, userdata, message):
         device_id = payload.get('end_device_ids', {}).get('device_id', 'unknown')
         event_date = payload.get('uplink_message', {}).get('settings', {}).get('time', 'unknown')
         event_data = event_data_to_dict(event_data)
+        print(event_data)
         device = db_service.get_device(device_id)
+        if not db_service.get_event_log_by_timestamp(event_date):
+            db_service.log_event(device_id, "status", event_date, json.dumps(event_data))
+            time.sleep(0.2)
         if event_data.get('status') == 'intrusion':
             socketio.emit('intrusion', json.dumps(event_data), broadcast=True)
             db_service.log_event(device_id, "intrusion", event_date, json.dumps(event_data))
         if not device:
             db_service.add_device(device_id, "unknown", "unknown", "unknown")
         # Log the event in the database with eventdata as a JSON string only if there are no events at the exact same time
-        if not db_service.get_event_log_by_timestamp(event_date):
-            db_service.log_event(device_id, "status", event_date, json.dumps(event_data))
-            time.sleep(0.2)
     except:
         print("There was an error parsing the payload")
 
@@ -53,6 +54,7 @@ mqtt_service = MQTTService("eu1.cloud.thethings.network", 1883,
 
 # Subscribe to a topic
 mqtt_service.subscribe('v3/intrusion-monitoring-2023@ttn/devices/ecam-intrusion-monitoring-2023/up')
+db_service.add_device("ecam-intrusion-monitoring-2023", "unknown", "unknown", "unknown")
 
 @app.route('/')
 def index():

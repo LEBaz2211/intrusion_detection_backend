@@ -92,7 +92,7 @@ class DatabaseService:
         cursor = conn.execute("SELECT * FROM event_log WHERE timestamp = ?", (timestamp,))
         log = cursor.fetchall()
         conn.close()
-        return json.dumps(log)
+        return log
 
     def update_device(self, device_id, model, location, installation_date):
         conn = sqlite3.connect(self.db_path)
