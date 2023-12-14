@@ -78,6 +78,24 @@ class DatabaseService:
         log = cursor.fetchall()
         conn.close()
         return json.dumps(log)
+    
+    def get_latest_event_log_id(self, device_id):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.execute("SELECT MAX(event_id) FROM event_log WHERE device_id = ?", (device_id,))
+        log = cursor.fetchone()
+        conn.close()
+        return log[0]
+    
+    def get_range_event_logs(self, device_id, number, start_id = None):
+        if start_id is None:
+            start_id = self.get_latest_event_log_id(device_id)  # Get the latest event log id
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = self._dict_factory
+        cursor = conn.execute("SELECT * FROM event_log WHERE device_id = ? AND event_id >= ? ORDER BY event_id DESC LIMIT ?", (device_id, start_id, number))
+        log = cursor.fetchall()
+        conn.close()
+        return json.dumps(log)
+
 
     def get_event_log_by_timestamp(self, timestamp):
         conn = sqlite3.connect(self.db_path)

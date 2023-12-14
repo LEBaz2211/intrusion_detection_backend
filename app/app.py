@@ -60,7 +60,7 @@ db_service.add_device("ecam-intrusion-monitoring-2023", "unknown", "unknown", "u
 def index():
     return "MQTT Flask Backend Running"
 
-@app.route('/devices', methods=['POST'])
+@app.route('/device', methods=['POST'])
 def add_device():
     data = request.json
     try:
@@ -76,7 +76,7 @@ def add_device():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/devices/<device_id>', methods=['GET'])
+@app.route('/device/<device_id>', methods=['GET'])
 def get_device(device_id):
     try:
         device = db_service.get_device(device_id)
@@ -122,7 +122,10 @@ def delete_device(device_id):
 
 @app.route('/event_logs/<device_id>', methods=['GET'])
 def get_event_logs(device_id):
+    data = request.json
     try:
+        data.get('number', 10)
+        data.get('start_id', None)
         log = db_service.get_event_logs(device_id)
         return jsonify({"event_log": log}), 200
     except Exception as e:
