@@ -4,10 +4,13 @@ from DBService import DatabaseService as db_service
 from MQTTService import MQTTService
 from flask_socketio import SocketIO
 import time
+from flask_cors import CORS
 
 db_service = db_service("app.db")
 
 app = Flask(__name__)
+CORS(app)
+
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 def event_data_to_dict(event_data):
@@ -25,15 +28,11 @@ def on_message(client, userdata, message):
     # print(f"Received message '{message.payload.decode()}' on topic '{message.topic}'")
     payload = json.loads(message.payload.decode('utf-8'))
     try:
-        print(payload)
         event_data = payload.get('uplink_message', {}).get('decoded_payload', {})
         device_id = payload.get('end_device_ids', {}).get('device_id', 'unknown')
         event_date = payload.get('uplink_message', {}).get('settings', {}).get('time', 'unknown')
         event_data = event_data_to_dict(event_data)
-        print(event_data)
-        # Find if device exists in database and add it if it doesn't exist
         device = db_service.get_device(device_id)
-        print(event_data['status'])
         if event_data.get('status') == 'intrusion':
             socketio.emit('intrusion', json.dumps(event_data), broadcast=True)
             db_service.log_event(device_id, "intrusion", event_date, json.dumps(event_data))
