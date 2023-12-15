@@ -33,7 +33,6 @@ def on_message(client, userdata, message):
         event_date = payload.get('uplink_message', {}).get('settings', {}).get('time', 'unknown')
         event_data = event_data_to_dict(event_data)
         print(event_data)
-        print(db_service.get_latest_event_log_status(device_id))
         device = db_service.get_device(device_id)
 
         if event_data.get('status') == 'INTRUDER_DETECTED':
