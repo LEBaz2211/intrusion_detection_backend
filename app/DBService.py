@@ -39,6 +39,13 @@ class DatabaseService:
         conn.commit()
         conn.close()
 
+    def table_is_empty(self, table_name, device_id):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name} WHERE device_id = ?", (device_id,))
+        count = cursor.fetchone()[0]
+        conn.close()
+        return count == 0
+
     def add_device(self, device_id, name, status, x1, y1, x2, y2):
         conn = sqlite3.connect(self.db_path)
         try:
