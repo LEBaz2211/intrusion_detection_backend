@@ -91,7 +91,8 @@ class DatabaseService:
     
     def get_latest_event_log_status(self, device_id):
         conn = sqlite3.connect(self.db_path)
-        cursor = conn.execute("SELECT MAX(event_type) FROM event_log WHERE device_id = ?", (device_id,))
+        cursor = conn.execute("SELECT MAX(event_id) FROM event_log WHERE device_id = ?", (device_id,))
+        cursor = conn.execute("SELECT event_type FROM event_log WHERE event_id = ?", (cursor.fetchone()[0],))
         log = cursor.fetchone()
         conn.close()
         return log[0]

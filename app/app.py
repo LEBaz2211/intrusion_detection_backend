@@ -37,15 +37,15 @@ def on_message(client, userdata, message):
         device = db_service.get_device(device_id)
 
         if event_data.get('status') == 'INTRUDER_DETECTED':
-            socketio.emit('INTRUDER_DETECTED', json.dumps(event_data), broadcast=True)
+            socketio.emit('INTRUDER_DETECTED', json.dumps(event_data))
             db_service.log_event(device_id, "INTRUDER_DETECTED", event_date, json.dumps(event_data))
 
         elif event_data.get('status') == 'INACTIVE' and db_service.get_latest_event_log_status(device_id) == 'INACTIVE':
-            socketio.emit('INACTIVE', json.dumps(event_data), broadcast=True)
+            socketio.emit('INACTIVE', json.dumps(event_data))
             db_service.log_event(device_id, "INACTIVE", event_date, json.dumps(event_data))
 
         elif event_data.get('status') == 'RASPBERRY_TIMEOUT' and db_service.get_latest_event_log_status(device_id) == 'RASPBERRY_TIMEOUT':
-            socketio.emit('RASPBERRY_TIMEOUT', json.dumps(event_data), broadcast=True)
+            socketio.emit('RASPBERRY_TIMEOUT', json.dumps(event_data))
             db_service.log_event(device_id, "RASPBERRY_TIMEOUT", event_date, json.dumps(event_data))
         
         elif not db_service.get_event_log_by_timestamp(event_date):
