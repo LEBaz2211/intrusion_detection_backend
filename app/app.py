@@ -80,7 +80,7 @@ def index():
 def add_device():
     data = request.json
     try:
-        success = db_service.add_device(data['device_id'], data['model'], data['location'], data['installation_date'])
+        success = db_service.add_device(data['device_id'], data['name'], data['status'], data['x1'],data['y1'],data['x2'],data['y2'] )
         if success:
             # Subscribe to the device's MQTT topic if needed
             # mqtt_service.subscribe_to_device(data['device_id'])
@@ -115,7 +115,7 @@ def get_devices():
 def update_device(device_id):
     data = request.json
     try:
-        success = db_service.update_device(device_id, data.get('model'), data.get('location'), data.get('installation_date'))
+        success = db_service.update_device(device_id,data['device_id'], data['name'], data['status'], data['x1'],data['y1'],data['x2'],data['y2'])
         if success:
             return jsonify({"message": "Device updated successfully"}), 200
         else:
