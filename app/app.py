@@ -61,7 +61,6 @@ def on_message(client, userdata, message):
             time.sleep(0.2)
     except Exception as e:
         print("There was an error parsing the payload")
-        print(e.with_traceback())
 
 
 # Initialize MQTT Service with the callback

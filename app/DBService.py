@@ -154,7 +154,7 @@ class DatabaseService:
 
         unique_event_logs = set()
         for log in event_logs:
-            key = (log[0], log[1], log[2], log[3])  # Adjust these indices based on your table structure
+            key = (log[1], log[2], log[3])  # Adjust these indices based on your table structure
             if key in unique_event_logs:
                 conn.execute("DELETE FROM event_log WHERE event_id = ?", (log[0],))  # Adjust this index based on your table structure
             else:
