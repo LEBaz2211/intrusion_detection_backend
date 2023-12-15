@@ -12,9 +12,12 @@ class DatabaseService:
         conn.execute('''
         CREATE TABLE IF NOT EXISTS devices (
             device_id TEXT PRIMARY KEY,
-            model TEXT,
-            location TEXT,
-            installation_date DATE
+            name TEXT,
+            status TEXT,
+            x1 REAL,
+            y1 REAL,
+            x2 REAL,
+            y2 REAL
         );
         ''')
         conn.execute('''
@@ -36,11 +39,11 @@ class DatabaseService:
         conn.commit()
         conn.close()
 
-    def add_device(self, device_id, model, location, installation_date):
+    def add_device(self, device_id, name, status, x1, y1, x2, y2):
         conn = sqlite3.connect(self.db_path)
         try:
-            conn.execute("INSERT INTO devices (device_id, model, location, installation_date) VALUES (?, ?, ?, ?)",
-                         (device_id, model, location, installation_date))
+            conn.execute("INSERT INTO devices (device_id, name, status, x1, y1, x2, y2) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                         (device_id, name, status, x1, y1, x2, y2))
             conn.commit()
         except sqlite3.IntegrityError:
             return json.dumps({"status": False})  # Device already exists

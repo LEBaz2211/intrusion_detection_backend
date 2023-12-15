@@ -54,7 +54,7 @@ mqtt_service = MQTTService("eu1.cloud.thethings.network", 1883,
 
 # Subscribe to a topic
 mqtt_service.subscribe('v3/intrusion-monitoring-2023@ttn/devices/ecam-intrusion-monitoring-2023/up')
-db_service.add_device("ecam-intrusion-monitoring-2023", "unknown", "unknown", "unknown")
+db_service.add_device("ecam-intrusion-monitoring-2023", "unknown", "unknown", 0, 1, 2 , 4)
 
 @app.route('/')
 def index():
