@@ -146,6 +146,22 @@ class DatabaseService:
         conn.commit()
         conn.close()
         return {"status": True}
+    
+    def remove_duplicate_event_logs(self):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.execute("SELECT * FROM event_log")
+        event_logs = cursor.fetchall()
+
+        unique_event_logs = set()
+        for log in event_logs:
+            key = (log[0], log[1], log[2], log[3])  # Adjust these indices based on your table structure
+            if key in unique_event_logs:
+                conn.execute("DELETE FROM event_log WHERE event_id = ?", (log[0],))  # Adjust this index based on your table structure
+            else:
+                unique_event_logs.add(key)
+
+        conn.commit()
+        conn.close()
 
 if __name__ == "__main__":
     # Test the database service

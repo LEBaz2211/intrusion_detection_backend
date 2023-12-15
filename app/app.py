@@ -27,6 +27,7 @@ def on_message(client, userdata, message):
     # print current thread id
     # print(f"Received message '{message.payload.decode()}' on topic '{message.topic}'")
     payload = json.loads(message.payload.decode('utf-8'))
+    db_service.remove_duplicate_event_logs()
     try:
         event_data = payload.get('uplink_message', {}).get('decoded_payload', {})
         device_id = payload.get('end_device_ids', {}).get('device_id', 'unknown')
@@ -111,7 +112,7 @@ def get_devices():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/devices/<device_id>', methods=['PUT'])
+@app.route('/device/<device_id>', methods=['PUT'])
 def update_device(device_id):
     data = request.json
     try:
@@ -125,7 +126,7 @@ def update_device(device_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/devices/<device_id>', methods=['DELETE'])
+@app.route('/device/<device_id>', methods=['DELETE'])
 def delete_device(device_id):
     try:
         success = db_service.delete_device(device_id)
