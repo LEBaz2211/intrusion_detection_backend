@@ -14,7 +14,7 @@ db_service = db_service("app.db")
 app = Flask(__name__)
 CORS(app)
 
-socketio = SocketIO(app, host='127.0.0.1', port=4000, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 
 def check_device_status():
