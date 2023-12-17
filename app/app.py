@@ -38,15 +38,15 @@ def on_message(client, userdata, message):
 
         if not db_service.table_is_empty("event_log", device_id):
             if event_data.get('status') == 'INTRUDER_DETECTED':
-                socketio.emit('INTRUDER_DETECTED', json.dumps(event_data.device_id))
+                socketio.emit('INTRUDER_DETECTED', json.dumps(device_id))
                 db_service.log_event(device_id, "INTRUDER_DETECTED", event_date, json.dumps(event_data))
 
             elif event_data.get('status') == 'INACTIVE' and db_service.get_latest_event_log_status(device_id) == 'INACTIVE':
-                socketio.emit('INACTIVE', json.dumps(event_data.device_id))
+                socketio.emit('INACTIVE', json.dumps(device_id))
                 db_service.log_event(device_id, "INACTIVE", event_date, json.dumps(event_data))
 
             elif event_data.get('status') == 'RASPBERRY_TIMEOUT' and db_service.get_latest_event_log_status(device_id) == 'RASPBERRY_TIMEOUT':
-                socketio.emit('RASPBERRY_TIMEOUT', json.dumps(event_data.device_id))
+                socketio.emit('RASPBERRY_TIMEOUT', json.dumps(device_id))
                 db_service.log_event(device_id, "RASPBERRY_TIMEOUT", event_date, json.dumps(event_data))
             
             elif not db_service.get_event_log_by_timestamp(event_date):
@@ -61,6 +61,8 @@ def on_message(client, userdata, message):
             time.sleep(0.2)
     except Exception as e:
         print("There was an error parsing the payload")
+        print(e.with_traceback())
+        print(payload)
 
 
 # Initialize MQTT Service with the callback
@@ -138,12 +140,11 @@ def delete_device(device_id):
 
 @app.route('/event_logs/<device_id>', methods=['GET'])
 def get_event_logs(device_id):
-    data = request.json
+    number = request.args.get('number', default=10, type=int)
+    start_id = request.args.get('start_id', default=None, type=int)
     try:
-        data.get('number', 10)
-        data.get('start_id', None)
-        log = db_service.get_event_logs(device_id)
-        return jsonify({"event_log": log}), 200
+        log = db_service.get_range_event_logs(device_id, number, start_id)
+        return jsonify({"event_logs": log}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

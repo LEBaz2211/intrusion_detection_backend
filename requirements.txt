@@ -1,4 +1,8 @@
 Flask
-SQLAlchemy
-psycopg2-binary
 python-dotenv
+paho-mqtt
+flask_cors
+Flask
+request
+flask_socketio
+flask_cors
