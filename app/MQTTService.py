@@ -23,3 +23,6 @@ class MQTTService:
     def subscribe_to_device(self, device_id):
         topic = f"v3/intrusion-monitoring-2023@ttn/devices/{device_id}/up/#"
         self.subscribe(topic)
+
+    def stop(self):
+        self.client.disconnect()

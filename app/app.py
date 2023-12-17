@@ -6,9 +6,8 @@ from flask_socketio import SocketIO
 import time
 from flask_cors import CORS
 from datetime import datetime, timedelta, timezone
+from multiprocessing import Process
 from threading import Thread
-from concurrent.futures import ThreadPoolExecutor
-import atexit
 
 db_service = db_service("app.db")
 
@@ -167,26 +166,17 @@ def get_event_logs(device_id):
 
 
 if __name__ == '__main__':
-    # Create a ThreadPoolExecutor
-    executor = ThreadPoolExecutor(max_workers=3)
+    # Create threads
+    status_thread = Thread(target=check_device_status)
+    mqtt_thread = Thread(target=mqtt_service._run)
 
-    # Submit tasks to the executor
-    mqtt_future = executor.submit(mqtt_service._run)
-    status_future = executor.submit(check_device_status)
-    flask_future = executor.submit(app.run, debug=True)  # Run Flask server in a separate thread
+    # Start threads
+    status_thread.start()
+    mqtt_thread.start()
 
-    # Function to stop the threads gracefully
-    def stop_threads():
-        mqtt_service.stop()  # Add a stop method to your MQTTService class
-        # stop_event.set()  # Add a stop_event to your check_device_status function
+    # Run Flask service in the main process
+    app.run(host='127.0.0.1', port=5000, debug=True)
 
-    # Register the function to be called on exit
-    atexit.register(stop_threads)
-
-    # Error handling
-    if mqtt_future.exception():
-        print("Error in MQTT thread:", mqtt_future.exception())
-    if status_future.exception():
-        print("Error in status check thread:", status_future.exception())
-    if flask_future.exception():
-        print("Error in Flask server thread:", flask_future.exception())
+    # Join threads
+    status_thread.join()
+    mqtt_thread.join()
