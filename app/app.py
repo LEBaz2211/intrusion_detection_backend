@@ -31,6 +31,7 @@ def check_device_status():
                     print(f"Device {device['device_id']} has not updated in over 5 minutes")
                     socketio.emit('DEVICE_TIMEOUT', json.dumps(device['device_id']))
                     db_service.log_event(device['device_id'], 'DEVICE_TIMEOUT', datetime.now(), json.dumps({'status': 'DEVICE_TIMEOUT'}))
+                    db_service.update_device_status(device['device_id'], 'DEVICE_TIMEOUT')
         time.sleep(120)
 
 def event_data_to_dict(event_data):
