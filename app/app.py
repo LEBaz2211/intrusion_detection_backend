@@ -14,7 +14,7 @@ db_service = db_service("app.db")
 app = Flask(__name__)
 CORS(app)
 
-socketio = SocketIO(app, host='127.0.0.1', port=3000, cors_allowed_origins="*")
+socketio = SocketIO(app, host='127.0.0.1', port=4000, cors_allowed_origins="*")
 
 
 def check_device_status():
@@ -176,7 +176,7 @@ if __name__ == '__main__':
     mqtt_thread.start()
 
     # Run Flask service in the main process
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    socketio.run(app, host='127.0.0.1', port=5000, debug=True)
 
     # Join threads
     status_thread.join()
