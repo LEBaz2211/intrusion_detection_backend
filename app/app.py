@@ -44,20 +44,23 @@ def on_message(client, userdata, message):
             elif event_data.get('status') == 'INACTIVE' and db_service.get_latest_event_log_status(device_id) == 'INACTIVE':
                 socketio.emit('INACTIVE', json.dumps(device_id))
                 db_service.log_event(device_id, "INACTIVE", event_date, json.dumps(event_data))
+                print(db_service.update_device_status(device_id, "INACTIVE"))
 
             elif event_data.get('status') == 'RASPBERRY_TIMEOUT' and db_service.get_latest_event_log_status(device_id) == 'RASPBERRY_TIMEOUT':
                 socketio.emit('RASPBERRY_TIMEOUT', json.dumps(device_id))
                 db_service.log_event(device_id, "RASPBERRY_TIMEOUT", event_date, json.dumps(event_data))
+                print(db_service.update_device_status(device_id, "RASPBERRY_TIMEOUT"))
             
             elif not db_service.get_event_log_by_timestamp(event_date):
                 db_service.log_event(device_id, event_data.get('status'), event_date, json.dumps(event_data))
                 time.sleep(0.2)
 
             if not device:
-                db_service.add_device(device_id, "unknown", "unknown", 0, 1, 2 , 4)
+                db_service.add_device(device_id, "unknown", "unknown", None, None, None , None)
             # Log the event in the database with eventdata as a JSON string only if there are no events at the exact same time
         else:
             db_service.log_event(device_id, event_data.get('status'), event_date, json.dumps(event_data))
+            print(db_service.update_device_status(device_id, event_data.get('status')))
             time.sleep(0.2)
     except Exception as e:
         print("There was an error parsing the payload")
@@ -117,7 +120,7 @@ def get_devices():
 def update_device(device_id):
     data = request.json
     try:
-        success = db_service.update_device(device_id,data['device_id'], data['name'], data['status'], data['x1'],data['y1'],data['x2'],data['y2'])
+        success = db_service.update_device(device_id, data['name'], data['status'], data['x1'],data['y1'],data['x2'],data['y2'])
         if success:
             return jsonify({"message": "Device updated successfully"}), 200
         else:

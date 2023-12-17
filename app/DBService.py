@@ -114,7 +114,6 @@ class DatabaseService:
         conn.close()
         return log
 
-
     def get_event_log_by_timestamp(self, timestamp):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = self._dict_factory
@@ -135,8 +134,21 @@ class DatabaseService:
         cursor = conn.execute("UPDATE devices SET name = ?, status = ?, x1 = ?, y1 = ?, x2 = ?, y2 = ? WHERE device_id = ?",
                               (name, status, x1, y1, x2, y2, device_id))
         if cursor.rowcount == 0:
-            return {"status": False} # Device not found
-
+            return False # Device not found
+        else:
+            conn.commit()
+            conn.close()
+            return True
+        
+    def update_device_status(self, device_id, status):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.execute("UPDATE devices SET status = ? WHERE device_id = ?", (status, device_id))
+        if cursor.rowcount == 0:
+            return False # Device not found
+        else:
+            conn.commit()
+            conn.close()
+            return True
 
     def delete_device(self, device_id):
         conn = sqlite3.connect(self.db_path)
@@ -173,7 +185,7 @@ if __name__ == "__main__":
     db_service.log_event("test_device", "test_event", now, "test_description")
     print(db_service.get_event_logs("test_device"))
     print(db_service.get_event_log_by_timestamp(now))
-    db_service.update_device("test_device", "test_name2", "test_status2", 5, 6, 7, 8)
+    print(db_service.update_device("test_device", "test_name2", "test_status2", 5, 6, 7, 8))
     print(db_service.get_device("test_device"))
     print(db_service.get_range_event_logs("test_device", 10))
     db_service.delete_device("test_device")
