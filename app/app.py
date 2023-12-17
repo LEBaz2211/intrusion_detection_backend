@@ -5,13 +5,34 @@ from MQTTService import MQTTService
 from flask_socketio import SocketIO
 import time
 from flask_cors import CORS
+from datetime import datetime, timedelta, timezone
+from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
+import atexit
 
 db_service = db_service("app.db")
 
 app = Flask(__name__)
 CORS(app)
 
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, host='127.0.0.1', port=3000, cors_allowed_origins="*")
+
+
+def check_device_status():
+    while True:
+        devices = db_service.get_devices()
+        for device in devices:
+            last_event = db_service.get_latest_event_log(device['device_id'])
+            print(last_event)
+            if last_event:
+                last_event_time = datetime.strptime(last_event['timestamp'], "%Y-%m-%d %H:%M:%S.%f")
+                last_event_time = last_event_time.replace(tzinfo=timezone.utc)
+                time_since_last_update = datetime.now(timezone.utc) - last_event_time
+                if time_since_last_update > timedelta(minutes=2):  # or however long you want to wait
+                    print(f"Device {device['device_id']} has not updated in over 5 minutes")
+                    socketio.emit('DEVICE_TIMEOUT', json.dumps(device['device_id']))
+                    db_service.log_event(device['device_id'], 'DEVICE_TIMEOUT', datetime.now(), json.dumps({'status': 'DEVICE_TIMEOUT'}))
+        time.sleep(120)
 
 def event_data_to_dict(event_data):
     """Takes a string like: {"text":"device_id:1, voltage:N/A, status:active"} and converts it to a dictionary"""
@@ -24,48 +45,41 @@ def event_data_to_dict(event_data):
 
 # Callback function to process MQTT messages
 def on_message(client, userdata, message):
-    # print current thread id
-    # print(f"Received message '{message.payload.decode()}' on topic '{message.topic}'")
     payload = json.loads(message.payload.decode('utf-8'))
-    db_service.remove_duplicate_event_logs()
     try:
         event_data = payload.get('uplink_message', {}).get('decoded_payload', {})
         device_id = payload.get('end_device_ids', {}).get('device_id', 'unknown')
-        event_date = payload.get('uplink_message', {}).get('settings', {}).get('time', 'unknown')
+        event_date = datetime.strptime(payload.get('uplink_message', {}).get('settings', {}).get('time', 'unknown'), "%Y-%m-%dT%H:%M:%S.%fZ")
         event_data = event_data_to_dict(event_data)
         print(event_data)
         device = db_service.get_device(device_id)
 
-        if not db_service.table_is_empty("event_log", device_id):
-            if event_data.get('status') == 'INTRUDER_DETECTED':
-                socketio.emit('INTRUDER_DETECTED', json.dumps(device_id))
-                db_service.log_event(device_id, "INTRUDER_DETECTED", event_date, json.dumps(event_data))
+        statuses = ['INTRUDER_DETECTED', 'INACTIVE', 'RASPBERRY_TIMEOUT', 'ACTIVE']
 
-            elif event_data.get('status') == 'INACTIVE' and db_service.get_latest_event_log_status(device_id) == 'INACTIVE':
-                socketio.emit('INACTIVE', json.dumps(device_id))
-                db_service.log_event(device_id, "INACTIVE", event_date, json.dumps(event_data))
-                print(db_service.update_device_status(device_id, "INACTIVE"))
+        if not db_service.table_is_empty("event_log", device_id) and event_data.get('status') in statuses:
 
-            elif event_data.get('status') == 'RASPBERRY_TIMEOUT' and db_service.get_latest_event_log_status(device_id) == 'RASPBERRY_TIMEOUT':
-                socketio.emit('RASPBERRY_TIMEOUT', json.dumps(device_id))
-                db_service.log_event(device_id, "RASPBERRY_TIMEOUT", event_date, json.dumps(event_data))
-                print(db_service.update_device_status(device_id, "RASPBERRY_TIMEOUT"))
-            
-            elif not db_service.get_event_log_by_timestamp(event_date):
+            if db_service.get_latest_event_log_status(device_id) == event_data.get('status'):
+                socketio.emit(event_data.get('status'), json.dumps(device_id))
                 db_service.log_event(device_id, event_data.get('status'), event_date, json.dumps(event_data))
-                time.sleep(0.2)
+                db_service.update_device_status(device_id, event_data.get('status'))
+            elif db_service.get_latest_event_log_status(device_id) in ['INACTIVE', 'RASPBERRY_TIMEOUT', 'DEVICE_TIMEOUT'] and event_data.get('status') == 'ACTIVE':
+                socketio.emit('DEVICE_RECONNECTED', json.dumps(device_id))
+                db_service.log_event(device_id, 'DEVICE_RECONNECTED', event_date, json.dumps(event_data))
+                db_service.update_device_status(device_id, 'ACTIVE')
 
-            if not device:
-                db_service.add_device(device_id, "unknown", "unknown", None, None, None , None)
-            # Log the event in the database with eventdata as a JSON string only if there are no events at the exact same time
+        if not device:
+            db_service.add_device(device_id, "unknown", "unknown", None, None, None , None)
         else:
             db_service.log_event(device_id, event_data.get('status'), event_date, json.dumps(event_data))
-            print(db_service.update_device_status(device_id, event_data.get('status')))
+            db_service.update_device_status(device_id, event_data.get('status'))
             time.sleep(0.2)
+
+        db_service.remove_duplicate_event_logs()
     except Exception as e:
         print("There was an error parsing the payload")
         print(e.with_traceback())
         print(payload)
+        raise e
 
 
 # Initialize MQTT Service with the callback
@@ -153,4 +167,26 @@ def get_event_logs(device_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Create a ThreadPoolExecutor
+    executor = ThreadPoolExecutor(max_workers=3)
+
+    # Submit tasks to the executor
+    mqtt_future = executor.submit(mqtt_service._run)
+    status_future = executor.submit(check_device_status)
+    flask_future = executor.submit(app.run, debug=True)  # Run Flask server in a separate thread
+
+    # Function to stop the threads gracefully
+    def stop_threads():
+        mqtt_service.stop()  # Add a stop method to your MQTTService class
+        # stop_event.set()  # Add a stop_event to your check_device_status function
+
+    # Register the function to be called on exit
+    atexit.register(stop_threads)
+
+    # Error handling
+    if mqtt_future.exception():
+        print("Error in MQTT thread:", mqtt_future.exception())
+    if status_future.exception():
+        print("Error in status check thread:", status_future.exception())
+    if flask_future.exception():
+        print("Error in Flask server thread:", flask_future.exception())

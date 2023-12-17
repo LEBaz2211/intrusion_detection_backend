@@ -13,11 +13,6 @@ class MQTTService:
         # Connect to the MQTT broker
         self.client.connect(host, port, 60)
 
-        # Start a background thread
-        self.thread = threading.Thread(target=self._run, args=())
-        self.thread.daemon = True
-        self.thread.start()
-
     def _run(self):
         # Start the network loop
         self.client.loop_forever()

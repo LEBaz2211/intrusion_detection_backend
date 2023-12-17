@@ -96,6 +96,14 @@ class DatabaseService:
         conn.close()
         return log[0]
     
+    def get_latest_event_log(self, device_id):
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = self._dict_factory
+        cursor = conn.execute("SELECT * FROM event_log WHERE event_id = (SELECT MAX(event_id) FROM event_log WHERE device_id = ?)", (device_id,))
+        log = cursor.fetchone()
+        conn.close()
+        return log
+    
     def get_latest_event_log_status(self, device_id):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.execute("SELECT MAX(event_id) FROM event_log WHERE device_id = ?", (device_id,))
@@ -121,7 +129,7 @@ class DatabaseService:
         log = cursor.fetchall()
         conn.close()
         return log
-
+    
     def get_event_log_by_timestamp(self, timestamp):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.execute("SELECT * FROM event_log WHERE timestamp = ?", (timestamp,))
