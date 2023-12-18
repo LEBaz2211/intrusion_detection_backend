@@ -72,9 +72,9 @@ def on_message(client, userdata, message):
                 db_service.log_event(device_id, 'DEVICE_RECONNECTED', event_date, json.dumps(event_data))
                 db_service.update_device_status(device_id, 'INACTIVE')
 
-        if not device:
+        elif not device:
             db_service.add_device(device_id, "unknown", "unknown", None, None, None , None)
-        else:
+        elif event_data.get('status') != None:
             db_service.log_event(device_id, event_data.get('status'), event_date, json.dumps(event_data))
             db_service.update_device_status(device_id, event_data.get('status'))
             time.sleep(0.2)
