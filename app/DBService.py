@@ -137,6 +137,13 @@ class DatabaseService:
         conn.close()
         return log
 
+    def get_device_status(self, device_id):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.execute("SELECT status FROM devices WHERE device_id = ?", (device_id,))
+        status = cursor.fetchone()
+        conn.close()
+        return status[0] if status else None
+
     def update_device(self, device_id, name, status, x1, y1, x2, y2):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.execute("UPDATE devices SET name = ?, status = ?, x1 = ?, y1 = ?, x2 = ?, y2 = ? WHERE device_id = ?",

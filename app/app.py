@@ -54,14 +54,15 @@ def on_message(client, userdata, message):
         print(event_data)
         device = db_service.get_device(device_id)
 
-        statuses = ['INTRUDER_DETECTED', 'INACTIVE', 'RASPBERRY_TIMEOUT', 'ACTIVE']
+        statuses = ['INTRUDER_DETECTED', 'INACTIVE', 'RASPBERRY_TIMEOUT', 'ACTIVE', 'DEVICE_TIMEOUT']
 
         if not db_service.table_is_empty("event_log", device_id) and event_data.get('status') in statuses:
 
             if db_service.get_latest_event_log_status(device_id) == event_data.get('status'):
                 socketio.emit(event_data.get('status'), json.dumps(device_id))
                 db_service.log_event(device_id, event_data.get('status'), event_date, json.dumps(event_data))
-                db_service.update_device_status(device_id, event_data.get('status'))
+                if db_service.get_device_status(device_id) != 'INTRUDER_DETECTED':
+                    db_service.update_device_status(device_id, event_data.get('status'))
             elif db_service.get_latest_event_log_status(device_id) in ['INACTIVE', 'RASPBERRY_TIMEOUT', 'DEVICE_TIMEOUT'] and event_data.get('status') == 'ACTIVE':
                 socketio.emit('DEVICE_RECONNECTED', json.dumps(device_id))
                 db_service.log_event(device_id, 'DEVICE_RECONNECTED', event_date, json.dumps(event_data))
