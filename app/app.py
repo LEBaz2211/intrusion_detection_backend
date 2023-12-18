@@ -57,7 +57,7 @@ def on_message(client, userdata, message):
         statuses = ['INTRUDER_DETECTED', 'INACTIVE', 'RASPBERRY_TIMEOUT', 'ACTIVE', 'DEVICE_TIMEOUT']
 
         if not db_service.table_is_empty("event_log", device_id) and event_data.get('status') in statuses:
-
+            print('here')
             if db_service.get_latest_event_log_status(device_id) == event_data.get('status'):
                 socketio.emit(event_data.get('status'), json.dumps(device_id))
                 db_service.log_event(device_id, event_data.get('status'), event_date, json.dumps(event_data))
@@ -75,6 +75,7 @@ def on_message(client, userdata, message):
         elif not device:
             db_service.add_device(device_id, "unknown", "unknown", None, None, None , None)
         elif event_data.get('status') != None:
+            print('here2')
             db_service.log_event(device_id, event_data.get('status'), event_date, json.dumps(event_data))
             db_service.update_device_status(device_id, event_data.get('status'))
             time.sleep(0.2)
