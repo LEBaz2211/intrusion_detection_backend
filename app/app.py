@@ -27,8 +27,8 @@ def check_device_status():
                 last_event_time = datetime.strptime(last_event['timestamp'], "%Y-%m-%d %H:%M:%S.%f")
                 last_event_time = last_event_time.replace(tzinfo=timezone.utc)
                 time_since_last_update = datetime.now(timezone.utc) - last_event_time
-                if time_since_last_update > timedelta(minutes=2):  # or however long you want to wait
-                    print(f"Device {device['device_id']} has not updated in over 5 minutes")
+                if time_since_last_update > timedelta(minutes=10):  # or however long you want to wait
+                    print(f"Device {device['device_id']} has not updated in over 10 minutes")
                     socketio.emit('DEVICE_TIMEOUT', json.dumps(device['device_id']))
                     db_service.log_event(device['device_id'], 'DEVICE_TIMEOUT', datetime.now(), json.dumps({'status': 'DEVICE_TIMEOUT'}))
                     db_service.update_device_status(device['device_id'], 'DEVICE_TIMEOUT')
@@ -67,6 +67,10 @@ def on_message(client, userdata, message):
                 socketio.emit('DEVICE_RECONNECTED', json.dumps(device_id))
                 db_service.log_event(device_id, 'DEVICE_RECONNECTED', event_date, json.dumps(event_data))
                 db_service.update_device_status(device_id, 'ACTIVE')
+            elif db_service.get_latest_event_log_status(device_id) == 'DEVICE_TIMEOUT' and event_data.get('status') == 'INACTIVE':
+                socketio.emit('DEVICE_RECONNECTED', json.dumps(device_id))
+                db_service.log_event(device_id, 'DEVICE_RECONNECTED', event_date, json.dumps(event_data))
+                db_service.update_device_status(device_id, 'INACTIVE')
 
         if not device:
             db_service.add_device(device_id, "unknown", "unknown", None, None, None , None)
