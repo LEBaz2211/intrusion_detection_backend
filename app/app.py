@@ -47,6 +47,8 @@ def event_data_to_dict(event_data):
 def on_message(client, userdata, message):
     payload = json.loads(message.payload.decode('utf-8'))
     try:
+        if 'decoded_payload' not in payload.get('uplink_message', {}):
+            return
         event_data = payload.get('uplink_message', {}).get('decoded_payload', {})
         device_id = payload.get('end_device_ids', {}).get('device_id', 'unknown')
         event_date = datetime.strptime(payload.get('uplink_message', {}).get('settings', {}).get('time', 'unknown'), "%Y-%m-%dT%H:%M:%S.%fZ")
