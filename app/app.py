@@ -70,14 +70,14 @@ def on_message(client, userdata, message):
                 db_service.log_event(device_id, 'DEVICE_OPERATIONAL', event_date, json.dumps(event_data))
                 db_service.update_device_status(device_id, 'ACTIVE')
             elif db_service.get_latest_event_log_status(device_id) == 'DEVICE_TIMEOUT' and event_data.get('status') == 'INACTIVE':
-
                 socketio.emit('DEVICE_RECONNECTED', json.dumps(device_id))
                 db_service.log_event(device_id, 'DEVICE_RECONNECTED', event_date, json.dumps(event_data))
                 db_service.update_device_status(device_id, 'INACTIVE')
             elif event_data.get('status') != None:
                 print('here2')
                 db_service.log_event(device_id, event_data.get('status'), event_date, json.dumps(event_data))
-                db_service.update_device_status(device_id, event_data.get('status'))
+                if db_service.get_device_status(device_id) != 'INTRUDER_DETECTED':
+                    db_service.update_device_status(device_id, event_data.get('status'))
 
 
         elif not device:
