@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+*{
+  font-family: 'Trebuchet MS', sans-serif;
+}
+html, body {
+    margin: 0;
+    height: 100%;
+}
+body {
+  background: linear-gradient(52deg, rgba(2,0,36,1) 0%, rgba(9,9,121,1) 35%, rgba(0,212,255,1) 100%) no-repeat;
+
+}
+.button-hover-child-hide {
+  display: none;
+}
+
+.button-hover-parent-hide:hover > .button-hover-child-hide {
+  display: block;
+}
+
